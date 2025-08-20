@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Drama Scraper API</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: inline-block;
+        }
+        .drama-card {
+            transition: all 0.3s ease;
+        }
+        .drama-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6">
+        <div class="container mx-auto px-4">
+            <h1 class="text-4xl font-bold text-center mb-2">
+                <i class="fas fa-video mr-3"></i>K-Drama Scraper API
+            </h1>
+            <p class="text-center text-lg opacity-90">
+                Search and discover Korean dramas from multiple streaming sources
+            </p>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-8">
+                <button onclick="showTab('search')" class="tab-btn py-4 px-6 font-medium text-purple-600 border-b-2 border-purple-600">
+                    <i class="fas fa-search mr-2"></i>Search
+                </button>
+                <button onclick="showTab('recent')" class="tab-btn py-4 px-6 font-medium text-gray-500 hover:text-purple-600">
+                    <i class="fas fa-clock mr-2"></i>Recent
+                </button>
+                <button onclick="showTab('api')" class="tab-btn py-4 px-6 font-medium text-gray-500 hover:text-purple-600">
+                    <i class="fas fa-code mr-2"></i>API Docs
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Search Tab -->
+        <div id="search-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">
+                    <i class="fas fa-search mr-2 text-purple-600"></i>Search K-Dramas
+                </h2>
+                
+                <form id="search-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="search-query" class="block text-sm font-medium text-gray-700 mb-2">Search Query</label>
+                            <input type="text" id="search-query" placeholder="e.g., Squid Game, Vincenzo..." 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label for="search-source" class="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                            <select id="search-source" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="all">All Sources</option>
+                                <option value="dramacool">DramaCool</option>
+                                <option value="kissasian">KissAsian</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="search-page" class="block text-sm font-medium text-gray-700 mb-2">Page</label>
+                            <input type="number" id="search-page" value="1" min="1" max="50" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-search mr-2"></i>Search
+                        <span class="loading ml-2">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="search-results" class="hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Search Results</h3>
+                    <div id="search-results-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Tab -->
+        <div id="recent-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">
+                    <i class="fas fa-clock mr-2 text-purple-600"></i>Recent K-Dramas
+                </h2>
+                
+                <form id="recent-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="recent-source" class="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                            <select id="recent-source" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="all">All Sources</option>
+                                <option value="dramacool">DramaCool</option>
+                                <option value="kissasian">KissAsian</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="recent-page" class="block text-sm font-medium text-gray-700 mb-2">Page</label>
+                            <input type="number" id="recent-page" value="1" min="1" max="50" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-download mr-2"></i>Load Recent
+                        <span class="loading ml-2">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="recent-results" class="hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Recent Dramas</h3>
+                    <div id="recent-results-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Documentation Tab -->
+        <div id="api-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">
+                    <i class="fas fa-code mr-2 text-purple-600"></i>API Documentation
+                </h2>
+
+                <div class="space-y-8">
+                    <!-- Base URL -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Base URL</h3>
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <code class="text-sm" id="base-url">Loading...</code>
+                        </div>
+                    </div>
+
+                    <!-- Search Endpoint -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Search Endpoint</h3>
+                        <div class="bg-gray-100 p-4 rounded-md mb-3">
+                            <code class="text-sm">GET /api/search</code>
+                        </div>
+                        <p class="text-gray-600 mb-3">Search for K-dramas across multiple sources.</p>
+                        
+                        <h4 class="font-medium mb-2">Parameters:</h4>
+                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 mb-3">
+                            <li><code>q</code> (required) - Search query (minimum 2 characters)</li>
+                            <li><code>page</code> (optional) - Page number (default: 1)</li>
+                            <li><code>source</code> (optional) - Source to scrape (all, dramacool, kissasian, default: all)</li>
+                        </ul>
+                        
+                        <h4 class="font-medium mb-2">Example:</h4>
+                        <div class="bg-gray-100 p-3 rounded-md">
+                            <code class="text-sm" id="search-example">Loading...</code>
+                        </div>
+                    </div>
+
+                    <!-- Recent Endpoint -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Recent Endpoint</h3>
+                        <div class="bg-gray-100 p-4 rounded-md mb-3">
+                            <code class="text-sm">GET /api/recent</code>
+                        </div>
+                        <p class="text-gray-600 mb-3">Get recently added K-dramas.</p>
+                        
+                        <h4 class="font-medium mb-2">Parameters:</h4>
+                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 mb-3">
+                            <li><code>page</code> (optional) - Page number (default: 1, max: 50)</li>
+                            <li><code>source</code> (optional) - Source to scrape (all, dramacool, kissasian, default: all)</li>
+                        </ul>
+                        
+                        <h4 class="font-medium mb-2">Example:</h4>
+                        <div class="bg-gray-100 p-3 rounded-md">
+                            <code class="text-sm" id="recent-example">Loading...</code>
+                        </div>
+                    </div>
+
+                    <!-- Details Endpoint -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Details Endpoint</h3>
+                        <div class="bg-gray-100 p-4 rounded-md mb-3">
+                            <code class="text-sm">GET /api/details</code>
+                        </div>
+                        <p class="text-gray-600 mb-3">Get detailed information about a specific drama.</p>
+                        
+                        <h4 class="font-medium mb-2">Parameters:</h4>
+                        <ul class="list-disc list-inside space-y-1 text-sm text-gray-600 mb-3">
+                            <li><code>url</code> (required) - Full URL to the drama page</li>
+                            <li><code>source</code> (optional) - Source identifier (default: auto)</li>
+                        </ul>
+                        
+                        <h4 class="font-medium mb-2">Example:</h4>
+                        <div class="bg-gray-100 p-3 rounded-md">
+                            <code class="text-sm" id="details-example">Loading...</code>
+                        </div>
+                    </div>
+
+                    <!-- Response Format -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-800">Response Format</h3>
+                        <p class="text-gray-600 mb-3">All endpoints return JSON responses with the following structure:</p>
+                        <div class="bg-gray-100 p-4 rounded-md">
+                            <pre class="text-sm"><code>{
+  "success": true,
+  "data": [...],
+  "total": 10,
+  "page": 1,
+  "source": "all"
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-4">
+                <i class="fas fa-heart text-red-500 mr-2"></i>
+                Built with Node.js, Vercel Serverless Functions & Modern ES6+
+            </p>
+            <p class="text-sm opacity-75">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                This API is for educational purposes only. Please respect the terms of service of the scraped websites.
+            </p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
